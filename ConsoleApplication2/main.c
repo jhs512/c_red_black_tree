@@ -40,11 +40,36 @@ RBT__Node* RBT__createNode(RBT__ElementType data) {
 	return node;
 }
 
-void RBT__insertNode(RBT__Node* node) {
+void RBT__addChildNode(RBT__Node* parentNode, RBT__Node* node) {
+	if (parentNode->data > node->data) {
+		if (parentNode->left == NULL) {
+			node->parent = parentNode;
+			parentNode->left = node;
+		}
+		else {
+			RBT__addChildNode(parentNode->left, node);
+		}
+	}
+	else {
+		if (parentNode->right == NULL) {
+			node->parent = parentNode;
+			parentNode->right = node;
+		}
+		else {
+			RBT__addChildNode(parentNode->right, node);
+		}
+	}
+}
+
+RBT__Node* RBT__insertNode(RBT__Node* node) {
 	if (rootNode == NULL) {
 		rootNode = node;
-		return;
+		return node;
 	}
+
+	RBT__addChildNode(rootNode, node);
+
+	return node;
 }
 
 void RBT__printNode(RBT__Node* node, int depth, int blackNodeDepth) {
@@ -52,6 +77,10 @@ void RBT__printNode(RBT__Node* node, int depth, int blackNodeDepth) {
 
 	for (int i = 0; i < depth; i++) {
 		printf("\t");
+	}
+
+	if (node->color == BLACK) {
+		blackNodeDepth++;
 	}
 
 	RBT__ElementType parentData = -1;
@@ -62,7 +91,15 @@ void RBT__printNode(RBT__Node* node, int depth, int blackNodeDepth) {
 		parentOf = node == node->parent->left ? "Left" : "Right";
 	}
 
-	printf("[data : %d, color : %s, parent:%d, parentOf:%s, depth:%d, blackNodeDepth:%d]\n", node->data, node->color == BLACK ? "BLACK" : "RED", parentData, parentOf, depth, blackNodeDepth);
+	printf("[data : %04d, color : %4s, parent : %04d, parentOf : %5s, depth : %02d, blackNodeDepth:%02d]\n", node->data, node->color == BLACK ? "BLACK" : "RED", parentData, parentOf, depth, blackNodeDepth);
+
+	if ( node->left != NULL ) {
+		RBT__printNode(node->left, depth + 1, blackNodeDepth);
+	}
+
+	if (node->right != NULL) {
+		RBT__printNode(node->right, depth + 1, blackNodeDepth);
+	}
 }
 // RBT °ü·Ã ³¡
 
