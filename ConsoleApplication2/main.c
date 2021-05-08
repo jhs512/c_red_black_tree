@@ -119,6 +119,36 @@ void RBT__printNode(RBT__Node* node, int depth, int blackNodeDepth) {
 }
 
 void RBT__rebuildNode(RBT__Node* node) {
+	while (node != rootNode && node->parent->color == RED)
+	{
+		// 나의 부모가 할아버지의 왼쪽 자식인 경우
+		if (node->parent == node->parent->parent->left) {
+			RBT__Node* uncleNode = node->parent->parent->right;
+
+			if (uncleNode->color == RED)
+            {
+                node->parent->color = BLACK;
+                uncleNode->color = BLACK;
+                node->parent->parent->color = RED;
+
+                node = node->parent->parent;
+            }
+		}
+		// 나의 부모가 할아버지의 오른쪽 자식인 경우
+		else {
+			RBT__Node* uncleNode = node->parent->parent->left;
+
+			if (uncleNode->color == RED)
+			{
+				node->parent->color = BLACK;
+				uncleNode->color = BLACK;
+				node->parent->parent->color = RED;
+
+				node = node->parent->parent;
+			}
+		}
+	}
+
 	rootNode->color = BLACK;
 }
 // RBT 관련 끝
