@@ -9,6 +9,22 @@ TODO LIST
 #define true 1
 #define false 0
 
+// 유틸성 함수 시작
+int inputCommand() {
+	char command[21];
+	fgets(command, sizeof command, stdin);
+
+	for (int i = 0; true; i++) {
+		if (command[i] == NULL && i > 0) {
+			command[i - 1] = NULL;
+			break;
+		}
+	}
+
+	return atoi(command);
+}
+// 유틸성 함수 끝
+
 // RBT 관련 시작
 typedef int RBT__ElementType;
 
@@ -101,23 +117,11 @@ void RBT__printNode(RBT__Node* node, int depth, int blackNodeDepth) {
 		RBT__printNode(node->right, depth + 1, blackNodeDepth);
 	}
 }
-// RBT 관련 끝
 
-// 유틸성 함수 시작
-int inputCommand() {
-	char command[21];
-	fgets(command, sizeof command, stdin);
-
-	for (int i = 0; true; i++) {
-		if (command[i] == NULL && i > 0) {
-			command[i - 1] = NULL;
-			break;
-		}
-	}
-
-	return atoi(command);
+void RBT__rebuildNode(RBT__Node* node) {
+	rootNode->color = BLACK;
 }
-// 유틸성 함수 끝
+// RBT 관련 끝
 
 // 사용자 명령어 처리 시작
 void actionPrintNodes() {
@@ -135,6 +139,8 @@ void actionInsertNode() {
 
 	RBT__Node* newNode = RBT__createNode(num);
 	RBT__insertNode(newNode);
+
+	RBT__rebuildNode(newNode);
 }
 // 사용자 명령어 처리 끝
 
