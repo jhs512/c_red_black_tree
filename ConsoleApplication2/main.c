@@ -62,6 +62,25 @@ bool RBT__isMyParentNodeLeft(RBT__Node* node) {
 	return node->parent == node->parent->parent->left;
 }
 
+// 입력된 노드의 부모가 형제 중에서 오른인지 여부
+bool RBT__isMyParentNodeRight(RBT__Node* node) {
+	return !RBT__isMyParentNodeLeft(node);
+}
+
+// 입력된 노드가 형제 중에서 왼쪽인지 여부
+bool RBT__isNodeLeft(RBT__Node* node) {
+	if (node->parent == NULL) {
+		return false;
+	}
+
+	return node == node->parent->left;
+}
+
+// 입력된노드가 형제 중에서 오른인지 여부
+bool RBT__isNodeRight(RBT__Node* node) {
+	return !RBT__isNodeLeft(node);
+}
+
 // 부모의 형제노드
 RBT__Node* RBT__getUncleNode(RBT__Node* node) {
 	if (node->parent == NULL) {
@@ -206,9 +225,25 @@ void RBT__addChildNode(RBT__Node* parentNode, RBT__Node* node) {
 
 void RBT__rotateForBalance(RBT__Node* childNode) {
 	if (RBT__isMyParentNodeLeft(childNode)) {
+		if (RBT__isNodeRight(childNode)) {
+			childNode = childNode->parent;
+			RBT__rotateLeft(childNode);
+		}
+
+		childNode->parent->color = BLACK;
+		childNode->parent->parent->color = RED;
+
 		RBT__rotateRight(childNode->parent->parent);
 	}
 	else {
+		if (RBT__isNodeLeft(childNode)) {
+			childNode = childNode->parent;
+			RBT__rotateRight(childNode);
+		}
+
+		childNode->parent->color = BLACK;
+		childNode->parent->parent->color = RED;
+
 		RBT__rotateLeft(childNode->parent->parent);
 	}
 }
@@ -228,9 +263,6 @@ void RBT__rebuildNode(RBT__Node* node) {
 			node = node->parent->parent;
 		}
 		else if (caseNo == 2) {
-			node->parent->color = BLACK;
-			node->parent->parent->color = RED;
-
 			RBT__rotateForBalance(node);
 		}
 	}
