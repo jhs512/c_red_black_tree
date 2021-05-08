@@ -6,6 +6,8 @@ TODO LIST
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef int bool;
+
 #define true 1
 #define false 0
 
@@ -41,85 +43,49 @@ typedef struct _RBT__Node
 RBT__Node* rootNode = NULL;
 RBT__Node* nilNode = NULL;
 
-RBT__Node* RBT__createNode(RBT__ElementType data) {
-	RBT__Node* node = malloc(sizeof(RBT__Node));
+// 리빌드를 계속 진행해야 하는지
+// 즉, 입력된 노드를 기준으로 봤을 때, 더 밸런스를 작업을 해야하는지 여부
+bool RBT__isNeedToContinueRebuild(RBT__Node* node) {
+	return node != rootNode && node->parent->color == RED;
+}
 
-	if (node == NULL) {
+// 입력된 노드의 부모가 형제 중에서 왼쪽인지 여부
+bool RBT__isMyParentNodeLeft(RBT__Node* node) {
+	if (node->parent == NULL) {
+		return false;
+	}
+
+	if (node->parent->parent == NULL) {
+		return false;
+	}
+
+	return node->parent == node->parent->parent->left;
+}
+
+// 부모의 형제노드
+RBT__Node* RBT__getUncleNode(RBT__Node* node) {
+	if (node->parent == NULL) {
 		return NULL;
 	}
 
-	node->parent = NULL;
-	node->left = NULL;
-	node->right = NULL;
-	node->color = RED;
-	node->data = data;
+	if (node->parent->parent == NULL) {
+		return NULL;
+	}
 
-	return node;
+	return RBT__isMyParentNodeLeft(node) ? node->parent->parent->right : node->parent->parent->left;
 }
 
-void RBT__addChildNode(RBT__Node* parentNode, RBT__Node* node) {
-	if (parentNode->data > node->data) {
-		if (parentNode->left == nilNode) {
-			node->parent = parentNode;
-			parentNode->left = node;
-		}
-		else {
-			RBT__addChildNode(parentNode->left, node);
-		}
-	}
-	else {
-		if (parentNode->right == nilNode) {
-			node->parent = parentNode;
-			parentNode->right = node;
-		}
-		else {
-			RBT__addChildNode(parentNode->right, node);
-		}
-	}
-}
+// 리빌드 케이스를 반환한다.
+int RBT__getRebuildCase(RBT__Node* node) {
+	RBT__Node* uncleNode = RBT__getUncleNode(node);
 
-RBT__Node* RBT__insertNode(RBT__Node* node) {
-	node->left = nilNode;
-	node->right = nilNode;
-
-	if (rootNode == NULL) {
-		rootNode = node;
-		return node;
+	// 간단한 경우
+	if (uncleNode->color == RED) {
+		return 1;
 	}
 
-	RBT__addChildNode(rootNode, node);
-
-	return node;
-}
-
-void RBT__printNode(RBT__Node* node, int depth, int blackNodeDepth) {
-	if (node == NULL) return;
-
-	for (int i = 0; i < depth; i++) {
-		printf("\t");
-	}
-
-	if (node->color == BLACK) {
-		blackNodeDepth++;
-	}
-
-	RBT__ElementType parentData = -1;
-	char* parentOf = "X";
-
-	if (node->parent != NULL) {
-		parentData = node->parent->data;
-		parentOf = node == node->parent->left ? "Left" : "Right";
-	}
-
-	printf("[data : %04d, color : %4s, parent : %04d, parentOf : %5s, depth : %02d, blackNodeDepth:%02d]\n", node->data, node->color == BLACK ? "BLACK" : "RED", parentData, parentOf, depth, blackNodeDepth);
-
-	if ( node->left != nilNode) {
-		RBT__printNode(node->left, depth + 1, blackNodeDepth);
-	}
-
-	if (node->right != nilNode) {
-		RBT__printNode(node->right, depth + 1, blackNodeDepth);
-	}
+	// 회전해야 하는 경우
+	return 2;
 }
 
 void RBT__rotateRight(RBT__Node* parentNode) {
@@ -182,52 +148,135 @@ void RBT__rotateLeft(RBT__Node* parentNode) {
 	parentNode->parent = rightChild;
 }
 
+RBT__Node* RBT__createNode(RBT__ElementType data) {
+	RBT__Node* node = malloc(sizeof(RBT__Node));
+
+	if (node == NULL) {
+		return NULL;
+	}
+
+	node->parent = NULL;
+	node->left = NULL;
+	node->right = NULL;
+	node->color = RED;
+	node->data = data;
+
+	return node;
+}
+
+// nilNode를 생성하여 반환(left, right가 NULL 이고, color가 BLACK)
+RBT__Node* RBT__createNilNode() {
+	RBT__Node* node = RBT__createNode(0);
+	node->data = 0;
+	node->color = BLACK;
+
+	return node;
+}
+
+// 노말노드를 반환(left, right가 nilNode이고, 색이 RED)
+RBT__Node* RBT__createNormalNode(RBT__ElementType data) {
+	RBT__Node* node = RBT__createNode(0);
+	node->data = data;
+	node->left = nilNode;
+	node->right = nilNode;
+
+	return node;
+}
+
+void RBT__addChildNode(RBT__Node* parentNode, RBT__Node* node) {
+	if (parentNode->data > node->data) {
+		if (parentNode->left == nilNode) {
+			node->parent = parentNode;
+			parentNode->left = node;
+		}
+		else {
+			RBT__addChildNode(parentNode->left, node);
+		}
+	}
+	else {
+		if (parentNode->right == nilNode) {
+			node->parent = parentNode;
+			parentNode->right = node;
+		}
+		else {
+			RBT__addChildNode(parentNode->right, node);
+		}
+	}
+}
+
+void RBT__rotateForBalance(RBT__Node* childNode) {
+	if (RBT__isMyParentNodeLeft(childNode)) {
+		RBT__rotateRight(childNode->parent->parent);
+	}
+	else {
+		RBT__rotateLeft(childNode->parent->parent);
+	}
+}
+
 void RBT__rebuildNode(RBT__Node* node) {
-	while (node != rootNode && node->parent->color == RED)
+	while (RBT__isNeedToContinueRebuild(node))
 	{
-		// 나의 부모가 할아버지의 왼쪽 자식인 경우
-		if (node->parent == node->parent->parent->left) {
+		int caseNo = RBT__getRebuildCase(node);
+
+		if (caseNo == 1) {
 			RBT__Node* uncleNode = node->parent->parent->right;
 
-			// 삼촌도 레드인 경우, 단순
-			if (uncleNode->color == RED)
-            {
-                node->parent->color = BLACK;
-                uncleNode->color = BLACK;
-                node->parent->parent->color = RED;
+			node->parent->color = BLACK;
+			uncleNode->color = BLACK;
+			node->parent->parent->color = RED;
 
-                node = node->parent->parent;
-            }
-			else {
-				node->parent->color = BLACK;
-				node->parent->parent->color = RED;
-
-				RBT__rotateRight(node->parent->parent);
-			}
+			node = node->parent->parent;
 		}
-		// 나의 부모가 할아버지의 오른쪽 자식인 경우
-		else {
-			RBT__Node* uncleNode = node->parent->parent->left;
+		else if (caseNo == 2) {
+			node->parent->color = BLACK;
+			node->parent->parent->color = RED;
 
-			// 삼촌도 레드인 경우, 단순
-			if (uncleNode->color == RED)
-			{
-				node->parent->color = BLACK;
-				uncleNode->color = BLACK;
-				node->parent->parent->color = RED;
-
-				node = node->parent->parent;
-			}
-			else {
-				node->parent->color = BLACK;
-				node->parent->parent->color = RED;
-
-				RBT__rotateLeft(node->parent->parent);
-			}
+			RBT__rotateForBalance(node);
 		}
 	}
 
 	rootNode->color = BLACK;
+}
+
+void RBT__insertNode(RBT__Node* node) {
+	if (rootNode == NULL) {
+		rootNode = node;
+	}
+	else {
+		RBT__addChildNode(rootNode, node);
+	}
+
+	RBT__rebuildNode(node);
+}
+
+void RBT__printNode(RBT__Node* node, int depth, int blackNodeDepth) {
+	if (node == NULL) return;
+
+	for (int i = 0; i < depth; i++) {
+		printf("\t");
+	}
+
+	if (node->color == BLACK) {
+		blackNodeDepth++;
+	}
+
+	RBT__ElementType parentData = -1;
+	char* parentOf = "X";
+
+	if (node->parent != NULL) {
+		parentData = node->parent->data;
+		parentOf = node == node->parent->left ? "Left" : "Right";
+	}
+
+	printf("[data : %04d, color : %4s, parent : %04d, parentOf : %5s, depth : %02d, blackNodeDepth:%02d]\n", node->data, node->color == BLACK ? "BLACK" : "RED", parentData, parentOf, depth, blackNodeDepth);
+
+	if ( node->left != nilNode) {
+		RBT__printNode(node->left, depth + 1, blackNodeDepth);
+	}
+
+	if (node->right != nilNode) {
+		RBT__printNode(node->right, depth + 1, blackNodeDepth);
+	}
 }
 // RBT 관련 끝
 
@@ -245,17 +294,15 @@ void actionInsertNode() {
 	int num = inputCommand();
 	printf("입력할 숫자 : %d\n", num);
 
-	RBT__Node* newNode = RBT__createNode(num);
+	RBT__Node* newNode = RBT__createNormalNode(num);
 	RBT__insertNode(newNode);
-
-	RBT__rebuildNode(newNode);
 }
 // 사용자 명령어 처리 끝
 
 // 메인 시작
 int main() {
-	nilNode = RBT__createNode(0);
-	nilNode->color = BLACK;
+	// Nil 노트 생성
+	nilNode = RBT__createNilNode();
 
 	while (true) {
 		printf("== 명령어 리스트 ==\n");
